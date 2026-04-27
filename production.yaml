@@ -1,1 +1,181 @@
-This is a test
+services:
+  # The Logic Engine
+  core:
+    image: markskinner92/iss300-simulator-core:latest
+    container_name: core
+    depends_on:
+      - redis
+      - script-runner
+      - modbus
+    restart: unless-stopped
+    env_file:
+      - .env
+    develop:
+        watch:
+          - action: sync
+            path: ./services/core
+            target: /app
+            ignore:
+              - node_modules
+          - action: rebuild
+            path: ./services/core/package.json
+
+  # The Database / Message Bus
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    container_name: redis
+    ports:
+      - "6379:6379" # Still expose to host so you can use redis-cli locally
+
+  # Modbus bridge
+  modbus:
+    image: markskinner92/iss300-simulator-modbus:latest
+    container_name: modbus
+    depends_on:
+      redis:
+        condition: service_healthy
+    devices:
+      - "${MODBUS_PORT}:${MODBUS_PORT}"
+    env_file:
+      - .env
+    environment:
+      - DEBUG_MODE=0
+    group_add:
+      - dialout
+    develop:
+        watch:
+          # FIX: Update the host path to match your folder structure
+          - action: sync+restart
+            path: ./services/modbus
+            target: /app
+            ignore:
+              - node_modules
+          
+          # FIX: Update the host path for package.json too
+          - action: rebuild
+            path: ./services/modbus/package.json
+
+  # The Socket.io <-> Redis Bridge
+  gui-gateway:
+    image: markskinner92/iss300-simulator-gui-gateway:latest
+    container_name: gui-gateway
+    ports:
+      - "3000:3000" # for the socket.io server
+    depends_on:
+      - redis
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - DEBUG_MODE=0
+    develop:
+      watch:
+        - path: ./services/gui/gui-gateway.js
+          target: /app/gui-gateway.js
+          action: sync+restart
+
+  # The Vue.js Development Server
+  gui-frontend:
+    image: markskinner92/iss300-simulator-gui-frontend:latest
+    container_name: gui-frontend
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:5173 || exit 1"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+      start_period: 5s # Gives the dev server a head start before failing
+    ports:
+      - "5173:5173"
+    develop:
+      watch:
+        - path: ./services/gui/frontend
+          target: /app
+          action: sync
+
+  # gui display
+  pi-display:
+    image: markskinner92/iss300-simulator-pi-display:latest
+    container_name: pi-display
+    privileged: true
+    # network_mode: host is vital so 'localhost:5173' actually works
+    network_mode: host 
+    depends_on:
+      gui-gateway:
+        condition: service_started
+      gui-frontend:
+        condition: service_healthy
+    devices:
+      - "/dev/dri:/dev/dri"
+      - "/dev/vchiq:/dev/vchiq"
+      - "/dev/input:/dev/input"
+    environment:
+      - DISPLAY=:0
+      # Tells X11 to ignore MIT-MAGIC-COOKIE-1 (security) for local connections
+      - XAUTHORITY=/home/kiosk/.Xauthority 
+      - DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+    shm_size: '1gb'
+    pid: "host"
+    security_opt:
+      - seccomp:unconfined
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      # Map the host's Xauth so the container has permission to draw
+      - ~/.Xauthority:/home/kiosk/.Xauthority:ro 
+      - /run/user/1000/bus:/run/user/1000/bus # Map the bus into the container
+      - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket
+    group_add:
+      - video
+      - input
+      - render # Critical for newer Pi kernels (Mesa drivers)
+      - "44"
+      - "992"
+    restart: on-failure:5
+
+  # Manages external network connectivity
+  network-controller:
+    image: markskinner92/iss300-simulator-network-controller:latest
+    container_name: network-controller
+    # Privileged is often needed to change hardware states (WiFi/Ethernet)
+    privileged: true
+    network_mode: "host" 
+    volumes:
+      # This allows the container to talk to the host's NetworkManager
+      - /var/run/dbus:/var/run/dbus
+    depends_on:
+      - redis
+    environment:
+      - REDIS_URL=redis://127.0.0.1:6379 # Since network_mode is 'host', use 127.0.0.1
+    develop:
+      watch:
+        - path: ./services/network-controller
+          target: /app
+          action: sync
+          ignore:
+            - node_modules # CRITICAL: Do not sync this folder!
+  
+  # Runs scripts externally on the PI, acts as a script queue system
+  script-runner:
+    image: markskinner92/iss300-simulator-script-runner:latest
+    container_name: script-runner
+    privileged: true  # Key for hardware access
+    devices:
+      - "/dev/gpiomem:/dev/gpiomem"   # Standard GPIO access
+      - "/dev/gpiochip0:/dev/gpiochip0" # Modern character device access
+      - "/dev/gpiochip4:/dev/gpiochip4" # Often used on Pi 5 for main GPIO
+      - "/dev/mem:/dev/mem"           # Required for some pinctrl/low-level functions    
+    volumes:
+      - /sys:/sys                     # Access to the sysfs GPIO interface
+      - /dev:/dev                     # Broad hardware access (recommended with pinctrl)
+    depends_on:
+      - redis
+    develop:
+      watch:
+        - action: sync
+          path: ./scripts
+          target: /app/scripts
