@@ -1,7 +1,7 @@
 services:
   # The Logic Engine
   core:
-    image: markskinner92/iss300-simulator-core:v0.0.3
+    image: markskinner92/iss300-simulator-core:v0.0.4
     container_name: core
     depends_on:
       - redis
@@ -35,7 +35,7 @@ services:
 
   # Modbus bridge
   modbus:
-    image: markskinner92/iss300-simulator-modbus:latest
+    image: markskinner92/iss300-simulator-modbus:v0.0.4
     container_name: modbus
     depends_on:
       redis:
