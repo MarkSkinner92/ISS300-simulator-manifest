@@ -1,7 +1,7 @@
 services:
   # The Logic Engine
   core:
-    image: markskinner92/iss300-simulator-core:latest
+    image: markskinner92/iss300-simulator-core:v0.0.3
     container_name: core
     depends_on:
       - redis
