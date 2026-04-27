@@ -1,7 +1,7 @@
 services:
   # The Logic Engine
   core:
-    image: markskinner92/iss300-simulator-core:latest
+    image: markskinner92/iss300-simulator-core:v0.0.3
     container_name: core
     depends_on:
       - redis
@@ -35,7 +35,7 @@ services:
 
   # Modbus bridge
   modbus:
-    image: markskinner92/iss300-simulator-modbus:latest
+    image: markskinner92/iss300-simulator-modbus:v0.0.3
     container_name: modbus
     depends_on:
       redis:
@@ -63,7 +63,7 @@ services:
 
   # The Socket.io <-> Redis Bridge
   gui-gateway:
-    image: markskinner92/iss300-simulator-gui-gateway:latest
+    image: markskinner92/iss300-simulator-gui-gateway:v0.0.3
     container_name: gui-gateway
     ports:
       - "3000:3000" # for the socket.io server
@@ -82,7 +82,7 @@ services:
 
   # The Vue.js Development Server
   gui-frontend:
-    image: markskinner92/iss300-simulator-gui-frontend:latest
+    image: markskinner92/iss300-simulator-gui-frontend:v0.0.3
     container_name: gui-frontend
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:5173 || exit 1"]
@@ -100,7 +100,7 @@ services:
 
   # gui display
   pi-display:
-    image: markskinner92/iss300-simulator-pi-display:latest
+    image: markskinner92/iss300-simulator-pi-display:v0.0.3
     container_name: pi-display
     privileged: true
     # network_mode: host is vital so 'localhost:5173' actually works
@@ -139,7 +139,7 @@ services:
 
   # Manages external network connectivity
   network-controller:
-    image: markskinner92/iss300-simulator-network-controller:latest
+    image: markskinner92/iss300-simulator-network-controller:v0.0.3
     container_name: network-controller
     # Privileged is often needed to change hardware states (WiFi/Ethernet)
     privileged: true
@@ -161,7 +161,7 @@ services:
   
   # Runs scripts externally on the PI, acts as a script queue system
   script-runner:
-    image: markskinner92/iss300-simulator-script-runner:latest
+    image: markskinner92/iss300-simulator-script-runner:v0.0.3
     container_name: script-runner
     privileged: true  # Key for hardware access
     devices:
