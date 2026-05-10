@@ -1,6 +1,7 @@
 services:
   # The Logic Engine
   core:
+    image: markskinner92/iss300-simulator-core:0.1.1
     build:
       context: ./services/core
     container_name: core
@@ -10,37 +11,7 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-    develop:
-        watch:
-          - action: sync
-            path: ./services/core
-            target: /app
-            ignore:
-              - node_modules
-          - action: rebuild
-            path: ./services/core/package.json
-
-  bedrock-redis-interface:
-    build:
-      context: ./services/bedrock-redis-interface
-    container_name: bedrock-redis-interface
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    depends_on:
-      - redis
-    restart: unless-stopped
-    env_file:
-      - .env
-    develop:
-        watch:
-          - action: sync
-            path: ./services/bedrock-redis-interface
-            target: /app
-            ignore:
-              - node_modules
-          - action: rebuild
-            path: ./services/bedrock-redis-interface/package.json
-
+      
   # The Database / Message Bus
   redis:
     image: redis:7-alpine
@@ -57,6 +28,7 @@ services:
 
   # Modbus bridge
   modbus:
+    image: markskinner92/iss300-simulator-modbus:0.1.1
     build:
       context: ./services/modbus
       dockerfile: Dockerfile
@@ -73,21 +45,10 @@ services:
       - DEBUG_MODE=0
     group_add:
       - dialout
-    develop:
-        watch:
-          # FIX: Update the host path to match your folder structure
-          - action: sync+restart
-            path: ./services/modbus
-            target: /app
-            ignore:
-              - node_modules
-          
-          # FIX: Update the host path for package.json too
-          - action: rebuild
-            path: ./services/modbus/package.json
 
   # The Socket.io <-> Redis Bridge
   gui-gateway:
+    image: markskinner92/iss300-simulator-gui-gateway:0.1.1
     build:
       context: ./services/gui
       dockerfile: Dockerfile.gateway
@@ -104,14 +65,10 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379
       - DEBUG_MODE=0
-    develop:
-      watch:
-        - path: ./services/gui/gui-gateway.js
-          target: /app/gui-gateway.js
-          action: sync
 
   # The Vue.js Development Server
   gui-frontend:
+    image: markskinner92/iss300-simulator-gui-frontend:0.1.1
     build:
       context: ./services/gui/frontend
       dockerfile: Dockerfile.frontend
@@ -125,14 +82,10 @@ services:
       start_period: 5s # Gives the dev server a head start before failing
     ports:
       - "5173:5173"
-    develop:
-      watch:
-        - path: ./services/gui/frontend
-          target: /app
-          action: sync
 
   # Manages external network connectivity
   network-controller:
+    image: markskinner92/iss300-simulator-network-controller:0.1.1
     build:
       context: ./services/network-controller
     container_name: network-controller
@@ -151,10 +104,3 @@ services:
     environment:
       - REDIS_URL=redis://127.0.0.1:6379 # Since network_mode is 'host', use 127.0.0.1
       - SYSTEM_CONNECTIONS_DIR=/etc/NetworkManager/system-connections
-    develop:
-      watch:
-        - path: ./services/network-controller
-          target: /app
-          action: sync
-          ignore:
-            - node_modules # CRITICAL: Do not sync this folder!
