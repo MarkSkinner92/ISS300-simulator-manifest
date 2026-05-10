@@ -68,7 +68,7 @@ services:
 
   # The Vue.js Development Server
   gui-frontend:
-    image: markskinner92/iss300-simulator-gui-frontend:0.1.1
+    image: markskinner92/iss300-simulator-gui-frontend:v0.1.3
     build:
       context: ./services/gui/frontend
       dockerfile: Dockerfile.frontend
