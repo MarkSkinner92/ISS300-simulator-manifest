@@ -1,5 +1,4 @@
 services:
-  # The Logic Engine
   core:
     image: markskinner92/iss300-simulator-core:v1.0.0-test-1
     build:
@@ -8,12 +7,11 @@ services:
     depends_on:
       - modbus
     restart: unless-stopped
-    extra_hosts:
-      - "redis:host-gateway"
+    networks:
+      - app-network
     env_file:
       - .env
 
-  # Modbus bridge
   modbus:
     image: markskinner92/iss300-simulator-modbus:v1.0.0-test-5
     build:
@@ -21,8 +19,8 @@ services:
       dockerfile: Dockerfile
     container_name: modbus
     restart: unless-stopped
-    extra_hosts:
-      - "redis:host-gateway"
+    networks:
+      - app-network
     devices:
       - "${MODBUS_PORT}:${MODBUS_PORT}"
     env_file:
@@ -32,7 +30,6 @@ services:
     group_add:
       - dialout
 
-  # The Socket.io <-> Redis Bridge
   gui-gateway:
     image: markskinner92/iss300-simulator-gui-gateway:v1.0.0-test-1
     build:
@@ -40,18 +37,18 @@ services:
       dockerfile: Dockerfile.gateway
     container_name: gui-gateway
     restart: unless-stopped
+    networks:
+      - app-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
-      - "redis:host-gateway"
     ports:
-      - "3000:3000" # for the socket.io server
+      - "3000:3000"
     env_file:
       - .env
     environment:
       - REDIS_URL=redis://redis:6379
       - DEBUG_MODE=0
 
-  # The Vue.js Production Server (compiles the source in image build, and runs it without vite)
   gui-frontend-prod:
     image: markskinner92/iss300-simulator-gui-frontend-prod:v1.0.0-test-3
     build:
@@ -59,25 +56,28 @@ services:
       dockerfile: Dockerfile.frontend.prod
     container_name: gui-frontend-prod
     restart: unless-stopped
+    networks:
+      - app-network
     ports:
       - "5173:5173"
 
-  # Manages external network connectivity
   network-controller:
     image: markskinner92/iss300-simulator-network-controller:v1.0.0-test-1
     build:
       context: ./services/network-controller
     container_name: network-controller
     restart: unless-stopped
-    # Privileged is often needed to change hardware states (WiFi/Ethernet)
     privileged: true
-    network_mode: "host" 
+    network_mode: "host"  # keeps using 127.0.0.1 for redis, no change needed
     volumes:
-      # This allows the container to talk to the host's NetworkManager
       - /var/run/dbus:/var/run/dbus
       - /etc/NetworkManager/system-connections:/etc/NetworkManager/system-connections:rw
     env_file:
       - .env
     environment:
-      - REDIS_URL=redis://127.0.0.1:6379 # Since network_mode is 'host', use 127.0.0.1
+      - REDIS_URL=redis://127.0.0.1:6379
       - SYSTEM_CONNECTIONS_DIR=/etc/NetworkManager/system-connections
+
+networks:
+  app-network:
+    external: true  # tells compose this network was created outside of compose
