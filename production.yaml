@@ -50,7 +50,7 @@ services:
       - DEBUG_MODE=0
 
   gui-frontend-prod:
-    image: markskinner92/iss300-simulator-gui-frontend-prod:v1.0.0-test-7
+    image: markskinner92/iss300-simulator-gui-frontend-prod:v1.0.0-test-8
     build:
       context: ./services/gui/frontend
       dockerfile: Dockerfile.frontend.prod
