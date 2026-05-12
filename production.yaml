@@ -15,7 +15,7 @@ services:
 
   # Modbus bridge
   modbus:
-    image: markskinner92/iss300-simulator-modbus:v1.0.0-test-4
+    image: markskinner92/iss300-simulator-modbus:v1.0.0-test-5
     build:
       context: ./services/modbus
       dockerfile: Dockerfile
