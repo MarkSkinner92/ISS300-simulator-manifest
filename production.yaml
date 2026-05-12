@@ -53,7 +53,7 @@ services:
 
   # The Vue.js Production Server (compiles the source in image build, and runs it without vite)
   gui-frontend-prod:
-    image: markskinner92/iss300-simulator-gui-frontend-prod:v1.0.0-test-1
+    image: markskinner92/iss300-simulator-gui-frontend-prod:v1.0.0-test-2
     build:
       context: ./services/gui/frontend
       dockerfile: Dockerfile.frontend.prod
