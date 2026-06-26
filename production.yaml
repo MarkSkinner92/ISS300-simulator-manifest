@@ -1,6 +1,6 @@
 services:
   core:
-    image: markskinner92/iss300-simulator-core:v1.0.0-test-1
+    image: markskinner92/iss300-simulator-core:v1.0.1
     build:
       context: ./services/core
     container_name: core
@@ -9,11 +9,13 @@ services:
     restart: unless-stopped
     networks:
       - app-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     env_file:
       - .env
 
   modbus:
-    image: markskinner92/iss300-simulator-modbus:v1.0.0-test-5
+    image: markskinner92/iss300-simulator-modbus:v1.0.1
     build:
       context: ./services/modbus
       dockerfile: Dockerfile
@@ -31,7 +33,7 @@ services:
       - dialout
 
   gui-gateway:
-    image: markskinner92/iss300-simulator-gui-gateway:v1.0.0-test-1
+    image: markskinner92/iss300-simulator-gui-gateway:v1.0.1
     build:
       context: ./services/gui
       dockerfile: Dockerfile.gateway
@@ -43,6 +45,7 @@ services:
       - "host.docker.internal:host-gateway"
     ports:
       - "3000:3000"
+      - "7074:7074"
     env_file:
       - .env
     environment:
@@ -50,7 +53,7 @@ services:
       - DEBUG_MODE=0
 
   gui-frontend-prod:
-    image: markskinner92/iss300-simulator-gui-frontend-prod:v1.0.0-test-8
+    image: markskinner92/iss300-simulator-gui-frontend-prod:v1.0.1
     build:
       context: ./services/gui/frontend
       dockerfile: Dockerfile.frontend.prod
@@ -62,7 +65,7 @@ services:
       - "5173:5173"
 
   network-controller:
-    image: markskinner92/iss300-simulator-network-controller:v1.0.0-test-1
+    image: markskinner92/iss300-simulator-network-controller:v1.0.1
     build:
       context: ./services/network-controller
     container_name: network-controller
