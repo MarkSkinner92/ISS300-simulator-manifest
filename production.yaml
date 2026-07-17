@@ -1,6 +1,12 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   core:
-    image: markskinner92/iss300-simulator-core:v1.4.0
+    image: markskinner92/iss300-simulator-core:v1.5.0
     build:
       context: ./services/core
     container_name: core
@@ -13,6 +19,7 @@ services:
       - "host.docker.internal:host-gateway"
     env_file:
       - .env
+    logging: *default-logging
 
   modbus:
     image: markskinner92/iss300-simulator-modbus:v1.0.6
@@ -31,6 +38,7 @@ services:
       - DEBUG_MODE=0
     group_add:
       - dialout
+    logging: *default-logging
 
   gui-gateway:
     image: markskinner92/iss300-simulator-gui-gateway:v1.2.0
@@ -51,9 +59,10 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379
       - DEBUG_MODE=0
+    logging: *default-logging
 
   gui-frontend-prod:
-    image: markskinner92/iss300-simulator-gui-frontend-prod:v1.3.0
+    image: markskinner92/iss300-simulator-gui-frontend-prod:v1.5.0
     build:
       context: ./services/gui/frontend
       dockerfile: Dockerfile.frontend.prod
@@ -63,6 +72,7 @@ services:
       - app-network
     ports:
       - "5173:5173"
+    logging: *default-logging
 
   network-controller:
     image: markskinner92/iss300-simulator-network-controller:v1.3.0
@@ -80,6 +90,7 @@ services:
     environment:
       - REDIS_URL=redis://127.0.0.1:6379
       - SYSTEM_CONNECTIONS_DIR=/etc/NetworkManager/system-connections
+    logging: *default-logging
 
 networks:
   app-network:
