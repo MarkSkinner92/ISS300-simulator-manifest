@@ -6,7 +6,7 @@ x-logging: &default-logging
 
 services:
   core:
-    image: markskinner92/iss300-simulator-core:v1.5.1
+    image: markskinner92/iss300-simulator-core:v2.0.0
     build:
       context: ./services/core
     container_name: core
@@ -65,7 +65,7 @@ services:
     logging: *default-logging
 
   gui-frontend-prod:
-    image: markskinner92/iss300-simulator-gui-frontend-prod:v1.5.0
+    image: markskinner92/iss300-simulator-gui-frontend-prod:v2.0.0
     build:
       context: ./services/gui/frontend
       dockerfile: Dockerfile.frontend.prod
