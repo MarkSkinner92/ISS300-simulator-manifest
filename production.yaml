@@ -6,7 +6,7 @@ x-logging: &default-logging
 
 services:
   core:
-    image: markskinner92/iss300-simulator-core:v2.2.1
+    image: markskinner92/iss300-simulator-core:v2.2.2
     build:
       context: ./services/core
     container_name: core
